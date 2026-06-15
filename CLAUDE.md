@@ -12,9 +12,13 @@ Local CLIs only; synchronous (no background jobs).
 - `.claude-plugin/` — `plugin.json` + `marketplace.json` (repo is its own single-plugin marketplace).
 
 ## How fuse works
-Runs in the main Claude context. Claude is **panelist #3 + judge + actor**: it forms its own answer,
-runs the advisor panel in parallel, synthesizes per `gavel-synthesis`, then takes action.
-**Only Claude writes** to the workspace.
+Runs in the main Claude context. Claude is **panelist #3 + judge + actor**. To keep it a genuine
+third input and not just a referee of the two advisors, step 1 is **blind drafting**: Claude writes
+its own complete answer to a temp file (`/tmp/gavel-claude-<ts>.md`) *before* the panel runs, then
+runs the advisor panel in parallel, then synthesizes all three committed submissions per
+`gavel-synthesis` (its draft is co-equal, not silently rewritten), then takes action. **Only Claude
+writes** to the workspace. The runner (`gavel.mjs fuse`) only queries Codex + Gemini — Claude's
+contribution is the in-process draft, so there is intentionally **no "claude" provider**.
 
 ## Read-only is a per-provider capability (`PROVIDERS[name].isolation`)
 - `codex` → `readonly-sandbox`: runs in the project dir under `-s read-only` (a real OS sandbox), so
