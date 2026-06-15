@@ -70,6 +70,7 @@ Gavel needs **at least one** advisor usable, but works best with both.
 | `/gavel:fuse <task>` | Ask Claude + Codex + Gemini in parallel, synthesize one fused answer, then act on it. |
 | `/gavel:ask <codex\|gemini> <prompt>` | Send a prompt to a single model and show its answer verbatim (no fusing, no edits). |
 | `/gavel:setup` | Check/install/auth the Codex and Gemini CLIs. |
+| `/gavel:config [show \| set <key> <value> \| unset <key>]` | View or change settings (model, timeout, panel) in the user or `--project` config file. |
 
 ## How advisors stay read-only
 
@@ -89,18 +90,33 @@ differ:
 
 ## Configuration
 
-Defaults: Codex `gpt-5.5`, Gemini `gemini-2.5-pro`, per-model timeout `300s`. Override via env vars
-(`GAVEL_CODEX_MODEL`, `GAVEL_GEMINI_MODEL`, `GAVEL_TIMEOUT`) or a settings file —
-`~/.gavel/config.json` (user) or `./.gavel.json` (project):
+Defaults: Codex `gpt-5.5-pro`, Gemini `gemini-3.1-pro`, per-model timeout `1800s` (30 min). These are the
+*preferred* defaults — if your account can't use them, gavel automatically falls back to whatever
+model the codex/gemini CLI itself defaults to (a model you explicitly set is always respected, never
+swapped). Override via env vars (`GAVEL_CODEX_MODEL`, `GAVEL_GEMINI_MODEL`, `GAVEL_TIMEOUT`) or a
+settings file — `~/.gavel/config.json` (user) or `./.gavel.json` (project).
+
+Easiest way to change settings is the `config` command (no hand-editing JSON):
+
+```bash
+/gavel:config show                       # effective settings + which file each comes from
+/gavel:config set timeout 600            # 10-min timeout, for all projects (~/.gavel/config.json)
+/gavel:config set codex.model gpt-5.5    # pin a model (opts that provider out of auto-fallback)
+/gavel:config set gemini.model gemini-2.5-pro --project   # this repo only (./.gavel.json)
+/gavel:config unset codex.model          # restore the preferred default + auto-fallback
+```
+
+Keys: `timeout` (seconds), `panel` (comma-separated), `<provider>.model`, `<provider>.enabled`. Or
+edit the file directly:
 
 ```json
 {
   "providers": {
-    "codex":  { "enabled": true, "model": "gpt-5.5" },
-    "gemini": { "enabled": true, "model": "gemini-2.5-pro" }
+    "codex":  { "enabled": true, "model": "gpt-5.5-pro" },
+    "gemini": { "enabled": true, "model": "gemini-3.1-pro" }
   },
   "panel": ["codex", "gemini"],
-  "timeout": 300
+  "timeout": 1800
 }
 ```
 

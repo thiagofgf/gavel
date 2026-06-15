@@ -5,9 +5,9 @@ Claude Code plugin that fuses the running Claude model with **OpenAI Codex** and
 Local CLIs only; synchronous (no background jobs).
 
 ## Layout
-- `commands/` — slash commands (`fuse`, `ask`, `setup`); thin Claude-side wrappers.
+- `commands/` — slash commands (`fuse`, `ask`, `setup`, `config`); thin Claude-side wrappers.
 - `scripts/gavel.mjs` — zero-dependency Node runner: a **provider registry** + config layer.
-  Subcommands: `setup | run | fuse`.
+  Subcommands: `setup | run | fuse | config`.
 - `skills/gavel-synthesis/SKILL.md` — the judge/synthesis contract.
 - `.claude-plugin/` — `plugin.json` + `marketplace.json` (repo is its own single-plugin marketplace).
 
@@ -44,8 +44,9 @@ tool, then pass `--prompt-file`. (`--prompt` exists for tests/programmatic use o
 defaults < `~/.gavel/config.json` < `./.gavel.json` < env < CLI flags. Shape:
 `{ "providers": { "<name>": { "enabled": bool, "model": str } }, "panel": ["<name>"...], "timeout": sec }`
 - Disabled provider → skipped in fuse, not counted "missing" in setup, no warning.
-- Models: `GAVEL_CODEX_MODEL` / `GAVEL_GEMINI_MODEL`; timeout `GAVEL_TIMEOUT` (seconds, per provider).
-- Gemini model availability is account/tier dependent (`gemini-3-pro` 404s on personal OAuth; default `gemini-2.5-pro`).
+- Models: `GAVEL_CODEX_MODEL` / `GAVEL_GEMINI_MODEL`; timeout `GAVEL_TIMEOUT` (seconds, per provider). Default timeout 1800s (30 min).
+- `gavel config` (subcommand + `/gavel:config`) reads/writes ONE settings file: `set`/`unset <key>` edits `~/.gavel/config.json` by default, or `./.gavel.json` with `--project`; `show` prints the merged effective view + sources. Keys: `timeout`, `panel`, `<provider>.model`, `<provider>.enabled`. It edits a single scope (never the merged view) and refuses to clobber a file that is already invalid JSON.
+- Preferred defaults are codex `gpt-5.5-pro` / gemini `gemini-3.1-pro`. Model availability is account/tier dependent — if the resolved default isn't usable for the account (e.g. `gpt-5.5-pro` is rejected on a ChatGPT account; `gemini-3.1-pro`/`gemini-3-pro` 404 on personal OAuth), `runProvider` retries once with `-m` omitted so the CLI uses its own default. This fallback fires ONLY for the built-in default (`resolveModel().isDefault`); an explicit flag/env/config model is never swapped. Detection is heuristic (`looksLikeModelError`) and the fallback is logged to stderr.
 
 ## setup readiness
 `ready` = at least one provider **in the resolved panel** is usable (so a panel/config that excludes

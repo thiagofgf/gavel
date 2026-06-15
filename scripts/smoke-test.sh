@@ -82,7 +82,7 @@ rm -rf "$D"
 # 9. non-positive timeout is clamped to the default
 D="$(mktemp -d)"; printf '%s' '{"timeout":-5}' > "$D/.gavel.json"
 TS="$(node "$GAVEL" setup --cwd "$D" --json | get timeoutSeconds)"
-[ "$TS" = "300" ] && ok "negative timeout clamped to default" || bad "timeout clamp (got $TS)"
+[ "$TS" = "1800" ] && ok "negative timeout clamped to default" || bad "timeout clamp (got $TS)"
 rm -rf "$D"
 
 echo
