@@ -18,7 +18,8 @@ provider keeps the panel working and, as a bonus, adds Claude and GPT-OSS models
 2. Make sure the `agy` CLI is on your PATH. The app ships it; `agy install` adds it if needed. Check
    with `agy --version` (this fork was tested against `1.0.10`).
 3. Sign in to the app once with your **Google AI Pro** account. That session authorizes `agy`, and
-   `/gavel:setup` detects it from the app's profile directory.
+   `/gavel:setup` confirms it by running `agy models` - which only returns your model list when you
+   are signed in - rather than just checking that the app is installed.
 
 There is no npm package and no API key to set. `/gavel:setup` will not try to `npm install` an
 `agy-*` provider; if one is missing it points you back to the app.

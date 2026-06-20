@@ -7,7 +7,7 @@
 //   read-only policy and the prompt is always fed over stdin (never argv) — see PROVIDERS.
 // - To add a provider, add one entry to PROVIDERS. Everything else (setup/run/fuse, config,
 //   panel) is data-driven off that map.
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -186,17 +186,17 @@ const PROVIDERS = {
 //   - It takes the prompt as the value of `-p` (argv), not on stdin. spawn() passes argv as an
 //     array with no shell, so quotes / $() / backticks in a prompt are inert (no injection); the
 //     one caveat is the prompt is visible in `ps` while the call runs. See docs/antigravity.md.
+let _agyAuthCache; // `agy models` is the same for every agy-* provider, so probe once per run.
 function agyCheckAuth() {
-  // agy authenticates through the Antigravity desktop app login; the app keeps its profile here.
-  const candidates = [
-    path.join(os.homedir(), "Library", "Application Support", "Antigravity"), // macOS
-    path.join(os.homedir(), ".config", "Antigravity"),                        // Linux
-    path.join(os.homedir(), ".antigravity"),
-  ];
-  for (const c of candidates) {
-    if (fs.existsSync(c)) return { authed: true, via: c };
-  }
-  return { authed: false, via: null };
+  if (_agyAuthCache !== undefined) return _agyAuthCache;
+  // Real evidence, not just "the app folder exists": `agy models` returns the account's model list
+  // only when signed in. Run it synchronously with a short timeout; a logged-out CLI errors or
+  // stalls (the timeout kills it), and either way we report not-authed.
+  const r = spawnSync("agy", ["models"], { encoding: "utf8", timeout: 8000, stdio: ["ignore", "pipe", "pipe"] });
+  if (r.error && r.error.code === "ENOENT") return (_agyAuthCache = { authed: false, via: null }); // not installed; the bin probe reports that
+  const out = (r.stdout || "").trim();
+  if (r.status === 0 && out) return (_agyAuthCache = { authed: true, via: "agy models" });
+  return (_agyAuthCache = { authed: false, via: null });
 }
 
 function makeAgyProvider(key, modelString) {
