@@ -11,6 +11,12 @@
 
 It runs the models through their **local CLIs** (`codex`, `gemini`, `agy`), reusing your existing logins. No API keys to wire up, no MCP servers, no background jobs.
 
+<p align="center">
+  <img src="assets/gavel-panel-flow.png" alt="Gavel panel flow: Claude drafts blind, the panel (Codex plus Antigravity-backed Gemini and Claude models) answers in parallel, then Claude synthesizes and acts" width="760">
+</p>
+
+<sub align="center">Claude runs the panel, drafts its own answer blind, then judges all of them into one and acts. Codex and the `agy-*` models are read-only advisors; only Claude writes.</sub>
+
 ## Inspiration
 
 Gavel is inspired by OpenRouter's [**Fusion beats Frontier**](https://openrouter.ai/blog/announcements/fusion-beats-frontier/): dispatch a prompt to a panel of models, then have a judge synthesize their answers into one response that beats any single frontier model. Gavel brings that pattern into Claude Code — Codex and Gemini answer as advisors, and their answers are judged and fused into one before it acts.
