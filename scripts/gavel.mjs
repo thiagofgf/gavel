@@ -176,7 +176,76 @@ const PROVIDERS = {
   },
 };
 
+// --- Antigravity (agy) multi-model provider --------------------------------
+// `agy` is the Antigravity CLI: one Antigravity / Google AI Pro login exposes several models
+// (run `agy models`). We register one gavel provider per model so a single fuse panel can mix
+// them - e.g. codex + Gemini 3.1 Pro + Claude Opus, all on one subscription. agy differs from
+// codex/gemini in two ways, both handled here:
+//   - No OS read-only sandbox, so we run it `isolated` (throwaway cwd, scrubbed PWD) like gemini,
+//     and add its own `--sandbox` flag for terminal restrictions.
+//   - It takes the prompt as the value of `-p` (argv), not on stdin. spawn() passes argv as an
+//     array with no shell, so quotes / $() / backticks in a prompt are inert (no injection); the
+//     one caveat is the prompt is visible in `ps` while the call runs. See docs/antigravity.md.
+function agyCheckAuth() {
+  // agy authenticates through the Antigravity desktop app login; the app keeps its profile here.
+  const candidates = [
+    path.join(os.homedir(), "Library", "Application Support", "Antigravity"), // macOS
+    path.join(os.homedir(), ".config", "Antigravity"),                        // Linux
+    path.join(os.homedir(), ".antigravity"),
+  ];
+  for (const c of candidates) {
+    if (fs.existsSync(c)) return { authed: true, via: c };
+  }
+  return { authed: false, via: null };
+}
+
+function makeAgyProvider(key, modelString) {
+  return {
+    bin: "agy",
+    tested: "1.0.10",
+    isolation: "isolated",
+    defaultModel: modelString,
+    modelEnv: `GAVEL_${key.toUpperCase().replace(/-/g, "_")}_MODEL`,
+    installHint: "install the Antigravity app (it ships the `agy` CLI; run `agy install` to add it to PATH)",
+    authHint: "sign in to the Antigravity app once (Google AI Pro), which authorizes `agy`",
+    checkAuth: agyCheckAuth,
+    async run({ prompt, model, cwd, timeoutMs, env }) {
+      const secs = Math.max(60, Math.round(timeoutMs / 1000));
+      // model "" (the runProvider fallback) => omit --model so agy uses the plan's default model.
+      const args = ["--sandbox", "--print-timeout", `${secs}s`];
+      if (model) args.push("--model", model);
+      args.push("-p", prompt); // prompt is the value of -p (argv); spawn array = no shell, no injection
+      const r = await runCommand("agy", args, { cwd, timeoutMs, env });
+      if (r.spawnError) return { ok: false, error: `agy CLI not found - ${this.installHint}.` };
+      if (r.timedOut) return { ok: false, error: `timed out after ${secs}s` };
+      if (r.code !== 0) return { ok: false, error: errorSnippet(r) || `agy exited with code ${r.code}` };
+      const text = (r.stdout || "").trim();
+      if (!text) return { ok: false, error: errorSnippet(r) || "agy returned no output" };
+      return { ok: true, text };
+    },
+  };
+}
+
+// One provider per agy model. Keys are gavel provider names (panel/config); values are the exact
+// strings `agy --model` expects (from `agy models`). Add/remove rows to match your plan's models.
+const AGY_MODELS = {
+  "agy-gemini-pro":   "Gemini 3.1 Pro (High)",
+  "agy-gemini-flash": "Gemini 3.5 Flash (High)",
+  "agy-opus":         "Claude Opus 4.6 (Thinking)",
+  "agy-sonnet":       "Claude Sonnet 4.6 (Thinking)",
+  "agy-gptoss":       "GPT-OSS 120B (Medium)",
+};
+for (const [key, modelString] of Object.entries(AGY_MODELS)) {
+  PROVIDERS[key] = makeAgyProvider(key, modelString);
+}
+
 const PROVIDER_NAMES = Object.keys(PROVIDERS);
+
+// Default fuse panel for this fork: one Codex advisor plus two Antigravity-backed models (Gemini
+// Pro and Claude Opus), so a fresh install fuses across vendors on a single subscription. The npm
+// `gemini` CLI provider stays registered but is left out of the default panel because its free
+// OAuth tier is deprecated; put it back with `gavel config set panel ...` if you have a key.
+const DEFAULT_PANEL = ["codex", "agy-gemini-pro", "agy-opus"];
 
 // --- config / settings -----------------------------------------------------
 // Precedence (low -> high): defaults < ~/.gavel/config.json < ./.gavel.json < env < CLI flags.
@@ -229,7 +298,7 @@ function looksLikeModelError(error) {
 }
 
 function resolvePanel(config) {
-  const base = Array.isArray(config.panel) && config.panel.length ? config.panel : PROVIDER_NAMES;
+  const base = Array.isArray(config.panel) && config.panel.length ? config.panel : DEFAULT_PANEL;
   return base.filter((n) => PROVIDERS[n] && isEnabled(n, config));
 }
 

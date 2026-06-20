@@ -1,11 +1,12 @@
 ---
-description: Ask Codex + Gemini + this Claude model in parallel, synthesize one fused answer, then act on it
+description: Ask your gavel panel (Codex + Antigravity models) + this Claude model in parallel, synthesize one fused answer, then act on it
 argument-hint: "<task or question>"
 ---
 
-You are running a **3-model fuse** for this request. You (the Claude Code model) are
-**panelist #3, the judge, and the actor**. Codex and Gemini are **read-only advisors** — only you
-write to the workspace or run side-effecting commands.
+You are running a **multi-model fuse** for this request. You (the Claude Code model) are a
+**panelist, the judge, and the actor**. The advisors in your gavel panel (by default Codex plus the
+Antigravity-backed Gemini 3.1 Pro and Claude Opus) are **read-only** - only you write to the
+workspace or run side-effecting commands.
 
 The task / question:
 $ARGUMENTS
@@ -36,14 +37,14 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/gavel.mjs" fuse --cwd "$(pwd)" --prompt-file
 ```
 
 Notes:
-- Codex explores your repo **read-only**; Gemini runs in an **isolated sandbox and cannot see your
-  files**, so put any code/snippets Gemini needs directly in the task text.
+- Codex explores your repo **read-only**; the Gemini and `agy-*` advisors run **isolated and cannot
+  see your files**, so put any code/snippets they need directly in the task text.
 - If a panelist shows `[error]` because its CLI is missing/unauthenticated, continue with whoever
   responded and tell the user they can run `/gavel:setup`. If the panel is empty, stop and say so.
 
-**3. Judge & synthesize.** Now read **three committed submissions** — your own draft file from step
-1, Codex's output, and Gemini's output — and apply the **gavel-synthesis** skill to fuse them. Your
-draft is a **fixed, co-equal input**, not a baseline to defend and not something to silently rewrite:
+**3. Judge & synthesize.** Now read **all committed submissions** - your own draft file from step
+1 plus each advisor's output from the panel - and apply the **gavel-synthesis** skill to fuse them.
+Your draft is a **fixed, co-equal input**, not a baseline to defend and not something to silently rewrite:
 extract each panelist's claims separately, identify consensus, contradictions, partial coverage,
 unique insights, and blind spots, then derive a **single fused answer**. Prefer claims supported by
 ≥2 panelists; resolve contradictions by correctness, verifying disputed/factual claims against the

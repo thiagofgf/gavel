@@ -8,8 +8,10 @@ Manage gavel settings via the runner's `config` subcommand. Precedence (low→hi
 `~/.gavel/config.json` < `./.gavel.json` < env vars < CLI flags. By default writes go to the **user**
 file (`~/.gavel/config.json`, all projects); add `--project` to write `./.gavel.json` (this repo only).
 
-Keys: `timeout` (seconds), `panel` (comma-separated provider list), `codex.model`, `codex.enabled`,
-`gemini.model`, `gemini.enabled`.
+Keys: `timeout` (seconds), `panel` (comma-separated provider list), and `<provider>.model` /
+`<provider>.enabled` for each provider - `codex`, `gemini`, and the Antigravity models
+`agy-gemini-pro`, `agy-gemini-flash`, `agy-opus`, `agy-sonnet`, `agy-gptoss`. The default fuse panel
+is `codex,agy-gemini-pro,agy-opus`; change it with `set panel <comma-separated list>`.
 
 Raw arguments:
 $ARGUMENTS

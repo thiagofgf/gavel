@@ -1,12 +1,12 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "gavel",
-  "owner": { "name": "junkim", "email": "junkim100@gmail.com" },
+  "owner": { "name": "Thiago Ferraz", "email": "thiagofgf@gmail.com" },
   "plugins": [
     {
       "name": "gavel",
       "source": ".",
-      "description": "Multi-model fuse (Claude + Codex + Gemini)."
+      "description": "Multi-model fuse (Claude + Codex + Gemini + Antigravity/agy)."
     }
   ]
 }
