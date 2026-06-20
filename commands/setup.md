@@ -1,5 +1,5 @@
 ---
-description: Check whether the Codex and Gemini CLIs are installed and authenticated for gavel
+description: Check whether the Codex, Gemini, and Antigravity (agy) CLIs are installed and authenticated for gavel
 argument-hint: ""
 allowed-tools: Bash(node:*), Bash(npm:*), AskUserQuestion
 ---
