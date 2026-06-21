@@ -1,7 +1,7 @@
 {
   "name": "gavel",
-  "version": "0.4.0",
-  "description": "Fuse the Claude Code model with OpenAI Codex, Google Gemini, and Antigravity (agy) models: query a multi-model panel in parallel, then Claude judges, synthesizes, and acts.",
+  "version": "0.5.0",
+  "description": "Fuse the Claude Code model with OpenAI Codex, Google Gemini, Antigravity (agy) models, and Grok Build: query a multi-model panel in parallel, then Claude judges, synthesizes, and acts.",
   "author": { "name": "Thiago Ferraz", "email": "thiagofgf@gmail.com" },
   "homepage": "https://github.com/thiagofgf/gavel",
   "repository": "https://github.com/thiagofgf/gavel",
