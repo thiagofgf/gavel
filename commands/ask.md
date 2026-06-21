@@ -1,6 +1,6 @@
 ---
 description: Send a prompt to a single model (codex, gemini, or an agy-* Antigravity model) and show its answer verbatim
-argument-hint: "<codex|gemini|agy-gemini-pro|agy-opus|...> <prompt>"
+argument-hint: "<codex|gemini|grok|agy-gemini-pro|agy-opus|...> <prompt>"
 allowed-tools: Bash(node:*), Write
 ---
 
@@ -11,7 +11,7 @@ $ARGUMENTS
 
 Parse and run safely:
 - Read the **first word** of the arguments to decide the provider. It MUST be exactly one of the
-  known provider names: `codex`, `gemini`, `agy-gemini-pro`, `agy-gemini-flash`, `agy-opus`,
+  known provider names: `codex`, `gemini`, `grok`, `agy-gemini-pro`, `agy-gemini-flash`, `agy-opus`,
   `agy-sonnet`, `agy-gptoss` (run `/gavel:setup` to see which are usable). If it is anything else, or
   the arguments are empty, show the usage `(/gavel:ask <provider> <prompt>)` and stop.
 - **Security:** the provider is the only value you place into the shell command. Emit ONLY the one
@@ -27,7 +27,7 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/gavel.mjs" run --provider codex --cwd "$(pwd
 
 Output rules:
 - On success, present the model's answer verbatim — do not paraphrase, summarize, or act on it.
-- Note: Codex reads your repo read-only; Gemini and the `agy-*` models run isolated and can't see
-  your files (include any needed context in the prompt).
+- Note: Codex reads your repo read-only; Gemini, `grok`, and the `agy-*` models run isolated and
+  can't see your files (include any needed context in the prompt).
 - If the command errors because the CLI is missing or unauthenticated, tell the user to run
   `/gavel:setup`.

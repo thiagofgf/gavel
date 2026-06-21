@@ -1,9 +1,9 @@
 # gavel
 
-Claude Code plugin that fuses the running Claude model with **OpenAI Codex**, **Google Gemini**, and
-**Antigravity (`agy`) models** (one Antigravity login exposes several): `/gavel:fuse` asks the panel
-in parallel, Claude judges + synthesizes one answer, then acts on it. Local CLIs only; synchronous
-(no background jobs).
+Claude Code plugin that fuses the running Claude model with **OpenAI Codex**, **Google Gemini**,
+**Antigravity (`agy`) models**, and **Grok Build (`grok`)** (one Antigravity login exposes several agy
+models; grok runs on a SuperGrok login): `/gavel:fuse` asks the panel in parallel, Claude judges +
+synthesizes one answer, then acts on it. Local CLIs only; synchronous (no background jobs).
 
 ## Layout
 - `commands/` — slash commands (`fuse`, `ask`, `setup`, `config`); thin Claude-side wrappers.
@@ -19,7 +19,7 @@ its own complete answer to a temp file (`/tmp/gavel-claude-<ts>.md`) *before* th
 runs the advisor panel in parallel, then synthesizes all three committed submissions per
 `gavel-synthesis` (its draft is co-equal, not silently rewritten), then takes action. **Only Claude
 writes** to the workspace. The runner (`gavel.mjs fuse`) only queries the panel advisors (Codex,
-Gemini, and any `agy-*` models) - Claude's contribution is the in-process draft, so there is
+Gemini, `grok`, and any `agy-*` models) - Claude's contribution is the in-process draft, so there is
 intentionally **no "claude" provider**.
 
 ## Read-only is a per-provider capability (`PROVIDERS[name].isolation`)
@@ -35,6 +35,9 @@ intentionally **no "claude" provider**.
 - `agy-*` (Antigravity) → `isolated` too: no OS read-only sandbox, so the same throwaway-cwd treatment
   as gemini, plus agy's own `--sandbox` flag. Unlike the others it takes the prompt as the value of
   `-p` (argv), not stdin; `spawn` passes argv as an array (no shell) so injection is still not possible.
+- `grok` (Grok Build) → `isolated` too: throwaway cwd so it does not load the repo's MCP servers/skills
+  (which it picks up from cwd and fails to auth against) and cannot write the repo. Prompt via `-p`
+  (argv, no shell). Runs on a SuperGrok login, no API key.
 - The `runProvider` harness creates/scrubs/deletes the throwaway dir; unknown isolation values default
   to isolated (fail safe).
 
@@ -50,6 +53,7 @@ Slash commands write the task to a temp file with the Write tool, then pass `--p
 - Codex (tested 0.133.0): `codex exec --color never -s read-only --skip-git-repo-check --ephemeral -m <model> -C <cwd> -o <tmp>`, prompt on stdin → read `<tmp>`.
 - Gemini (tested 0.46.0): `gemini --skip-trust --approval-mode plan -m <model> --output-format json`, prompt on stdin, in a throwaway cwd → parse `.response`.
 - agy (tested 1.0.10): `agy --sandbox --print-timeout <secs>s --model "<exact model>" -p <prompt>`, prompt as argv, in a throwaway cwd → plain-text stdout. One Antigravity login serves every `agy-*` model; run `agy models` for the exact strings.
+- grok (tested 0.2.59): `grok --no-wait-for-background -m <model> -p <prompt>`, prompt as argv, in a throwaway cwd → plain-text stdout. Grok Build on a SuperGrok login; models `grok-build` / `grok-composer-2.5-fast` (run `grok models`). Isolation keeps it from loading the repo's MCP servers/skills.
 - A provider is `ok` only on **exit code 0** with non-empty output; otherwise a structured error
   (gemini errors may arrive as JSON on stdout or stderr).
 
@@ -57,7 +61,7 @@ Slash commands write the task to a temp file with the Write tool, then pass `--p
 defaults < `~/.gavel/config.json` < `./.gavel.json` < env < CLI flags. Shape:
 `{ "providers": { "<name>": { "enabled": bool, "model": str } }, "panel": ["<name>"...], "timeout": sec }`
 - Disabled provider → skipped in fuse, not counted "missing" in setup, no warning.
-- Models: `GAVEL_CODEX_MODEL` / `GAVEL_GEMINI_MODEL`, and `GAVEL_<KEY>_MODEL` per agy provider (e.g. `GAVEL_AGY_OPUS_MODEL`); timeout `GAVEL_TIMEOUT` (seconds, per provider). Default timeout 1800s (30 min). Default fuse panel: `codex,agy-gemini-pro,agy-opus` (the npm `gemini` provider is registered but off the default panel).
+- Models: `GAVEL_CODEX_MODEL` / `GAVEL_GEMINI_MODEL` / `GAVEL_GROK_MODEL`, and `GAVEL_<KEY>_MODEL` per agy provider (e.g. `GAVEL_AGY_OPUS_MODEL`); timeout `GAVEL_TIMEOUT` (seconds, per provider). Default timeout 1800s (30 min). Default fuse panel: `codex,agy-gemini-pro,agy-opus,grok` (the npm `gemini` provider is registered but off the default panel).
 - `gavel config` (subcommand + `/gavel:config`) reads/writes ONE settings file: `set`/`unset <key>` edits `~/.gavel/config.json` by default, or `./.gavel.json` with `--project`; `show` prints the merged effective view + sources. Keys: `timeout`, `panel`, `<provider>.model`, `<provider>.enabled`. It edits a single scope (never the merged view) and refuses to clobber a file that is already invalid JSON.
 - Preferred defaults are codex `gpt-5.5-pro` / gemini `gemini-3.1-pro`. Model availability is account/tier dependent — if the resolved default isn't usable for the account (e.g. `gpt-5.5-pro` is rejected on a ChatGPT account; `gemini-3.1-pro`/`gemini-3-pro` 404 on personal OAuth), `runProvider` retries once with `-m` omitted so the CLI uses its own default. This fallback fires ONLY for the built-in default (`resolveModel().isDefault`); an explicit flag/env/config model is never swapped. Detection is heuristic (`looksLikeModelError`) and the fallback is logged to stderr.
 

@@ -239,13 +239,50 @@ for (const [key, modelString] of Object.entries(AGY_MODELS)) {
   PROVIDERS[key] = makeAgyProvider(key, modelString);
 }
 
+// --- Grok Build (grok) provider --------------------------------------------
+// `grok` is xAI's Grok Build CLI: it signs in with your xAI/X login and runs on an active SuperGrok
+// subscription (no API key), the same way codex uses a ChatGPT login and agy uses Antigravity.
+// Single-turn headless mode is `grok -p <prompt>` (prompt as argv; spawn array = no shell, so no
+// injection). We run it `isolated` like agy/gemini: a throwaway cwd, so it does not pick up this
+// project's MCP servers/skills (which it would otherwise load from the cwd and fail to auth against)
+// and cannot make relative writes into the repo. `--no-wait-for-background` returns right after the
+// first turn instead of waiting up to grok's 600s background-task timeout.
+function grokCheckAuth() {
+  const p = path.join(os.homedir(), ".grok", "auth.json");
+  return fs.existsSync(p) ? { authed: true, via: p } : { authed: false, via: null };
+}
+PROVIDERS.grok = {
+  bin: "grok",
+  tested: "0.2.59",
+  isolation: "isolated",
+  defaultModel: "grok-build",
+  modelEnv: "GAVEL_GROK_MODEL",
+  installHint: "install Grok Build with `curl -fsSL https://x.ai/cli/install.sh | bash`",
+  authHint: "sign in with `grok login` (needs an active SuperGrok subscription)",
+  checkAuth: grokCheckAuth,
+  async run({ prompt, model, cwd, timeoutMs, env }) {
+    // model "" (the runProvider fallback) => omit -m so grok uses its own default model.
+    const args = ["--no-wait-for-background"];
+    if (model) args.push("-m", model);
+    args.push("-p", prompt); // prompt as the value of -p (argv); spawn array = no shell, no injection
+    const r = await runCommand("grok", args, { cwd, timeoutMs, env });
+    if (r.spawnError) return { ok: false, error: `grok CLI not found - ${this.installHint}.` };
+    if (r.timedOut) return { ok: false, error: `timed out after ${Math.round(timeoutMs / 1000)}s` };
+    if (r.code !== 0) return { ok: false, error: errorSnippet(r) || `grok exited with code ${r.code}` };
+    const text = (r.stdout || "").trim();
+    if (!text) return { ok: false, error: errorSnippet(r) || "grok returned no output" };
+    return { ok: true, text };
+  },
+};
+
 const PROVIDER_NAMES = Object.keys(PROVIDERS);
 
-// Default fuse panel for this fork: one Codex advisor plus two Antigravity-backed models (Gemini
-// Pro and Claude Opus), so a fresh install fuses across vendors on a single subscription. The npm
-// `gemini` CLI provider stays registered but is left out of the default panel because its free
-// OAuth tier is deprecated; put it back with `gavel config set panel ...` if you have a key.
-const DEFAULT_PANEL = ["codex", "agy-gemini-pro", "agy-opus"];
+// Default fuse panel for this fork: Codex, two Antigravity-backed models (Gemini Pro and Claude
+// Opus), and Grok Build - four advisors across four vendors, each on a subscription/login rather
+// than a metered API key. Trim it with `gavel config set panel ...` for a leaner/cheaper fuse. The
+// npm `gemini` CLI provider stays registered but is off the default panel (its free OAuth tier is
+// deprecated; add it back if you have a key).
+const DEFAULT_PANEL = ["codex", "agy-gemini-pro", "agy-opus", "grok"];
 
 // --- config / settings -----------------------------------------------------
 // Precedence (low -> high): defaults < ~/.gavel/config.json < ./.gavel.json < env < CLI flags.

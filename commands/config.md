@@ -9,9 +9,9 @@ Manage gavel settings via the runner's `config` subcommand. Precedence (low→hi
 file (`~/.gavel/config.json`, all projects); add `--project` to write `./.gavel.json` (this repo only).
 
 Keys: `timeout` (seconds), `panel` (comma-separated provider list), and `<provider>.model` /
-`<provider>.enabled` for each provider - `codex`, `gemini`, and the Antigravity models
-`agy-gemini-pro`, `agy-gemini-flash`, `agy-opus`, `agy-sonnet`, `agy-gptoss`. The default fuse panel
-is `codex,agy-gemini-pro,agy-opus`; change it with `set panel <comma-separated list>`.
+`<provider>.enabled` for each provider - `codex`, `gemini`, `grok` (Grok Build on SuperGrok), and the
+Antigravity models `agy-gemini-pro`, `agy-gemini-flash`, `agy-opus`, `agy-sonnet`, `agy-gptoss`. The
+default fuse panel is `codex,agy-gemini-pro,agy-opus,grok`; change it with `set panel <list>`.
 
 Raw arguments:
 $ARGUMENTS

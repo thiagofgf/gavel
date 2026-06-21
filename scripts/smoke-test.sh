@@ -20,7 +20,8 @@ fi
 CODEX_USABLE="$(printf '%s' "$REPORT" | get providers.codex.usable)"
 GEMINI_USABLE="$(printf '%s' "$REPORT" | get providers.gemini.usable)"
 AGY_USABLE="$(printf '%s' "$REPORT" | get providers.agy-gemini-pro.usable)"
-echo "(codex usable=$CODEX_USABLE, gemini usable=$GEMINI_USABLE, agy usable=$AGY_USABLE)"
+GROK_USABLE="$(printf '%s' "$REPORT" | get providers.grok.usable)"
+echo "(codex usable=$CODEX_USABLE, gemini usable=$GEMINI_USABLE, agy usable=$AGY_USABLE, grok usable=$GROK_USABLE)"
 
 # 1. exit-code: a bad model must error, not be a fake success
 if node "$GAVEL" run --provider gemini --model not-a-real-model-xyz --prompt "hi" --timeout 45 >/dev/null 2>&1; then
@@ -53,6 +54,12 @@ if [ "$AGY_USABLE" = "true" ]; then
   D="$(mktemp -d)"; printf '%s' 'Create a file named W.txt in your current directory using any tool, then say DONE.' > "$D/p.txt"
   node "$GAVEL" run --provider agy-gemini-pro --cwd "$D" --prompt-file "$D/p.txt" --timeout 120 >/dev/null 2>&1
   [ -e "$D/W.txt" ] && bad "agy did not write the project" || ok "agy did not write the project"
+  rm -rf "$D"
+fi
+if [ "$GROK_USABLE" = "true" ]; then
+  D="$(mktemp -d)"; printf '%s' 'Create a file named W.txt in your current directory using any tool, then say DONE.' > "$D/p.txt"
+  node "$GAVEL" run --provider grok --cwd "$D" --prompt-file "$D/p.txt" --timeout 140 >/dev/null 2>&1
+  [ -e "$D/W.txt" ] && bad "grok did not write the project" || ok "grok did not write the project"
   rm -rf "$D"
 fi
 
