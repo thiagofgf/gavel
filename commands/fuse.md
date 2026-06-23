@@ -28,7 +28,13 @@ your answer a genuine third input instead of you merely refereeing the two advis
 **2. Consult the panel.** Get the task to the advisors **without putting it in a shell command** (so
 quotes, `$(...)`, or backticks in the task can't break the command or inject shell syntax):
 
-- Use the **Write tool** to write the verbatim task text to a fresh temp file with a unique name,
+- **If the task is about this codebase, gather context BEFORE writing the prompt file.** The
+  isolated advisors reason ONLY about what is in the text: only codex can read the repo, and only
+  you can read the live cluster/services. So read the relevant files (and run any MCP/skill queries
+  you need), then embed the concrete files, snippets, and live facts the blind panelists require
+  directly in the prompt. Keep the user's task verbatim and put your gathered context in a clearly
+  marked block above it. Guessing on their behalf is worse than over-including.
+- Use the **Write tool** to write that prompt text to a fresh temp file with a unique name,
   e.g. `/tmp/gavel-prompt-<timestamp>.txt`. Delete it afterward.
 - Then run this — only the fixed file path is in the shell, never the task text:
 
