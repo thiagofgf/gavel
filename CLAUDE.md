@@ -53,7 +53,7 @@ Slash commands write the task to a temp file with the Write tool, then pass `--p
 - Codex (tested 0.133.0): `codex exec --color never -s read-only --skip-git-repo-check --ephemeral -m <model> -C <cwd> -o <tmp>`, prompt on stdin → read `<tmp>`.
 - Gemini (tested 0.46.0): `gemini --skip-trust --approval-mode plan -m <model> --output-format json`, prompt on stdin, in a throwaway cwd → parse `.response`.
 - agy (tested 1.0.10): `agy --sandbox --print-timeout <secs>s --model "<exact model>" -p <prompt>`, prompt as argv, in a throwaway cwd → plain-text stdout. One Antigravity login serves every `agy-*` model; run `agy models` for the exact strings.
-- grok (tested 0.2.59): `grok --no-wait-for-background -m <model> -p <prompt>`, prompt as argv, in a throwaway cwd → plain-text stdout. Grok Build on a SuperGrok login; models `grok-build` / `grok-composer-2.5-fast` (run `grok models`). Isolation keeps it from loading the repo's MCP servers/skills.
+- grok (tested 0.2.59): `grok --no-wait-for-background --disallowed-tools run_terminal_cmd -m <model> -p <prompt>`, prompt as argv, in a throwaway cwd → plain-text stdout. Grok Build on a SuperGrok login; models `grok-build` / `grok-composer-2.5-fast` (run `grok models`). Isolation keeps it from loading the repo's MCP servers/skills. grok-build is an autonomous agent, so the terminal tool is removed (otherwise it can burn a headless turn exploring the empty cwd and return nothing); an empty first turn is still retried once before erroring.
 - A provider is `ok` only on **exit code 0** with non-empty output; otherwise a structured error
   (gemini errors may arrive as JSON on stdout or stderr).
 

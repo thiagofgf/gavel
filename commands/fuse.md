@@ -46,7 +46,11 @@ Notes:
 - Codex explores your repo **read-only**; the Gemini and `agy-*` advisors run **isolated and cannot
   see your files**, so put any code/snippets they need directly in the task text.
 - If a panelist shows `[error]` because its CLI is missing/unauthenticated, continue with whoever
-  responded and tell the user they can run `/gavel:setup`. If the panel is empty, stop and say so.
+  responded and tell the user they can run `/gavel:setup`.
+- If a panelist returned no output even after gavel's built-in retry (e.g. `grok returned no output,
+  even after a retry`), do not silently drop it: tell the user it was tried and retried, then ask
+  whether to proceed with the panelists that responded or re-run the fuse to try it once more.
+- If the panel is empty, stop and say so.
 
 **3. Judge & synthesize.** Now read **all committed submissions** - your own draft file from step
 1 plus each advisor's output from the panel - and apply the **gavel-synthesis** skill to fuse them.

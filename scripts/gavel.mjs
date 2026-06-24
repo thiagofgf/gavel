@@ -262,16 +262,28 @@ PROVIDERS.grok = {
   checkAuth: grokCheckAuth,
   async run({ prompt, model, cwd, timeoutMs, env }) {
     // model "" (the runProvider fallback) => omit -m so grok uses its own default model.
-    const args = ["--no-wait-for-background"];
+    // grok-build is an autonomous agent: given the throwaway empty cwd it sometimes spends a
+    // headless turn running shell tools to "explore the workspace", that execution gets cancelled,
+    // and the run ends with no answer text. The advisor only needs to reason from the prompt, so we
+    // remove the terminal tool (--disallowed-tools is headless-only). --no-wait-for-background
+    // returns right after the first turn.
+    const args = ["--no-wait-for-background", "--disallowed-tools", "run_terminal_cmd"];
     if (model) args.push("-m", model);
     args.push("-p", prompt); // prompt as the value of -p (argv); spawn array = no shell, no injection
-    const r = await runCommand("grok", args, { cwd, timeoutMs, env });
-    if (r.spawnError) return { ok: false, error: `grok CLI not found - ${this.installHint}.` };
-    if (r.timedOut) return { ok: false, error: `timed out after ${Math.round(timeoutMs / 1000)}s` };
-    if (r.code !== 0) return { ok: false, error: errorSnippet(r) || `grok exited with code ${r.code}` };
-    const text = (r.stdout || "").trim();
-    if (!text) return { ok: false, error: errorSnippet(r) || "grok returned no output" };
-    return { ok: true, text };
+    // Even with the terminal tool gone an empty first turn can still happen occasionally; it is
+    // intermittent and safe to retry, so try once more before giving up. Any stderr noise (e.g. an
+    // MCP tool grok skipped) is NOT the failure here - the failure is the empty stdout, reported
+    // plainly below instead of surfacing the unrelated stderr line.
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      const r = await runCommand("grok", args, { cwd, timeoutMs, env });
+      if (r.spawnError) return { ok: false, error: `grok CLI not found - ${this.installHint}.` };
+      if (r.timedOut) return { ok: false, error: `timed out after ${Math.round(timeoutMs / 1000)}s` };
+      if (r.code !== 0) return { ok: false, error: errorSnippet(r) || `grok exited with code ${r.code}` };
+      const text = (r.stdout || "").trim();
+      if (text) return { ok: true, text };
+      if (attempt === 1) process.stderr.write("gavel: grok returned no output, retrying once...\n");
+    }
+    return { ok: false, error: "grok returned no output, even after a retry (transient empty turn from grok-build; re-run to try again)" };
   },
 };
 
